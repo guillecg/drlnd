@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Environments folders
+Banana_Linux/
+Reacher_Linux/
+Tennis_Linux/
+
+# Experiments folders
+experiments/
+old/
