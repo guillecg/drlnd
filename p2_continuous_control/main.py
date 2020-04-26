@@ -150,8 +150,9 @@ if __name__ == '__main__':
     # plot the scores
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    plt.plot(np.arange(1, len(scores) + 1), scores)
-    plt.plot(np.arange(1, len(scores) + 1), scores_window_means, label='mean')
+    plt.plot(np.arange(1, len(scores) + 1), scores, label='Episode scores')
+    plt.plot(np.arange(1, len(scores) + 1), scores_window_means, label='Window mean')
+    plt.legend()
     plt.ylabel('Score')
     plt.xlabel('Episode #')
     plt.show()
