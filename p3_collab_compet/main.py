@@ -1,6 +1,3 @@
-# Adapted from: https://github.com/udacity/deep-reinforcement-learning
-# Ideas on gamma and tau taken from: https://github.com/snhwang/p3_collab-compet
-
 import datetime
 from pathlib import Path
 
@@ -161,18 +158,21 @@ if __name__ == '__main__':
             print(f'Saving weights into {EXPERIMENT_FOLDER} folder...')
             torch.save(
                 agent.actor_local.state_dict(),
-                f'{EXPERIMENT_FOLDER}/weights_actor_epoch_{i_episode}.pth'
+                f'{EXPERIMENT_FOLDER}/weights_actor_episode_{i_episode}.pth'
             )
             torch.save(
                 agent.critic_local.state_dict(),
-                f'{EXPERIMENT_FOLDER}/weights_critic_epoch_{i_episode}.pth'
+                f'{EXPERIMENT_FOLDER}/weights_critic_episode_{i_episode}.pth'
             )
+
+            break
 
     # plot the scores
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    plt.plot(np.arange(1, len(scores) + 1), scores)
-    plt.plot(np.arange(1, len(scores) + 1), scores_window_means, label='mean')
+    plt.plot(np.arange(1, len(scores) + 1), scores, label='Episode scores')
+    plt.plot(np.arange(1, len(scores) + 1), scores_window_means, label='Window mean')
+    plt.legend()
     plt.ylabel('Score')
     plt.xlabel('Episode #')
     plt.show()
