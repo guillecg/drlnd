@@ -36,7 +36,29 @@ The task is episodic, and in order to solve the environment, your agent must get
 
 ### Instructions
 
-Follow the instructions in `Navigation.ipynb` to get started with training your own agent!  
+## Project Architecture
+```bash
+├── agents
+│   ├── agent.py     # algorithm implementation
+├── experiments
+├── models
+│   ├── networks.py  # model networks
+│   ├── utils.py     # replay buffer, noise class
+├── (environment folder)
+├── main.py
+├── README.md
+├── Report.md
+```
+
+## Training
+Follow the instructions in `Report.ipynb` to get started with training your own agent!
+
+Additionally, all the process is summarized in the `main.py` script, which performs the following tasks when called:
+- Creates the **experiment folder** (naming it with the current date and time), where the final plot of scores and all the weights for the successful models will be saved.
+- Instantiates the **agent** that is going to be trained.
+- Performs the **training** of the agent, following the common structure of a nested loop, one for episodes and another for timesteps.
+- **Saves the weights of successful agents** for each epoch.
+- **Plots the evolution of scores** after the training process.
 
 ### (Optional) Challenge: Learning from Pixels
 
