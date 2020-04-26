@@ -1,13 +1,3 @@
-# Adapted from:
-# https://github.com/djbyrne/TD3
-# https://github.com/sweetice/Deep-reinforcement-learning-with-pytorch
-# https://github.com/wiflore/DRL_Continuous_Control-TD3_Pytorch
-
-# Great explanations:
-# https://spinningup.openai.com/en/latest/algorithms/td3.html
-# https://towardsdatascience.com/td3-learning-to-run-with-ai-40dfc512f93
-# https://towardsdatascience.com/reinforcement-learning-ddpg-and-td3-for-news-recommendation-d3cddec26011
-
 import datetime
 from pathlib import Path
 
@@ -30,7 +20,7 @@ SCORE_WINDOW = 100
 
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-# Set seeds
+# set seeds
 torch.manual_seed(SEED)
 np.random.seed(SEED)
 
@@ -77,7 +67,7 @@ if __name__ == '__main__':
     )
 
     # training hyperparameters
-    n_episodes = 300   # maximum number of training episodes
+    n_episodes = 250   # maximum number of training episodes
     max_t = 1000       # maximum number of timesteps per episode
 
     scores = []                                 # scores for each episode
@@ -98,6 +88,7 @@ if __name__ == '__main__':
             rewards = env_info.rewards                  # get the reward
             dones = env_info.local_done                 # see if episode has finished
 
+            # save experience tuple (of each agent) into replay buffer
             for i_agent in range(0, num_agents):
                 experience = (
                     states[i_agent],
@@ -108,8 +99,8 @@ if __name__ == '__main__':
                 )
                 agent.memory.add(data=experience)
 
-            states = next_states      # roll over states to next time step
-            score += rewards          # update the scores
+            states = next_states  # roll over states to next time step
+            score += rewards      # update the scores
 
             # Train each agent
             agent.learn_batch(timestep=t)
@@ -147,12 +138,14 @@ if __name__ == '__main__':
             print(f'Saving weights into {EXPERIMENT_FOLDER} folder...')
             torch.save(
                 agent.actor_local.state_dict(),
-                f'{EXPERIMENT_FOLDER}/weights_actor_epoch_{i_episode}.pth'
+                f'{EXPERIMENT_FOLDER}/weights_actor_episode_{i_episode}.pth'
             )
             torch.save(
                 agent.critic_local.state_dict(),
-                f'{EXPERIMENT_FOLDER}/weights_critic_epoch_{i_episode}.pth'
+                f'{EXPERIMENT_FOLDER}/weights_critic_episode_{i_episode}.pth'
             )
+
+            break
 
     # plot the scores
     fig = plt.figure()

@@ -36,17 +36,14 @@ class AgentTD3(object):
         self.critic_fc2_units = 300
 
         # Hyperparameters definition
-        self.batch_size = 128         # minibatch size
-        self.buffer_size = int(1e6)   # replay buffer size
-        self.learn_every = 20         # how often to update the actor
-        self.learn_iterations = 20    # number of training iterations
-        self.gamma = 0.995            # discount factor
-        self.tau = 0.001              # for soft update of target parameters
-        self.actor_lr = 1e-4          # actor learning rate
-        self.critic_lr = 1e-3         # critic learning rate
-        self.select_act_noise = 0.1   # action selection noise
-        self.policy_noise_min = 0.2   # baseline policy noise
-        self.policy_noise_max = 0.5   # max policy noise value
+        self.batch_size = 128        # minibatch size
+        self.buffer_size = int(1e6)  # replay buffer size
+        self.learn_every = 20        # how often to update the actor
+        self.learn_iterations = 20   # number of update iterations
+        self.gamma = 0.995           # discount factor
+        self.tau = 0.001             # for soft update of target parameters
+        self.actor_lr = 1e-4         # actor learning rate
+        self.critic_lr = 1e-3        # critic learning rate
 
         # Update defined hyperparameters
         self.__dict__.update(hyperparams)
@@ -100,7 +97,10 @@ class AgentTD3(object):
         )
 
         # Noise process
-        self.noise = OUNoise(self.action_size, self.seed)
+        self.noise = OUNoise(
+            size=self.action_size,
+            seed=self.seed
+        )
 
         # Replay memory
         self.memory = ReplayBuffer(
@@ -110,8 +110,11 @@ class AgentTD3(object):
         )
 
     def select_action(self, state, add_noise=True, agent_size=1):
-        """Returns actions for given state as per current policy."""
+        """Returns actions for given state as per current policy.
 
+        NOTE: set add_noise=False when not training.
+
+        """
         state = torch.from_numpy(state).float().to(self.device)
 
         self.actor_local.eval()
@@ -120,42 +123,55 @@ class AgentTD3(object):
         self.actor_local.train()
 
         if add_noise:
-            for a in range(0, agent_size):
-                action[a] += self.noise.sample()
+            for i in range(agent_size):
+                action[i] += self.noise.sample()
 
-        return np.clip(action, -1, 1)   # all actions between -1 and 1
+        # Clip actions to avoid interference while learning
+        action = np.clip(action, -1, 1)
+
+        return action
 
     def reset(self):
         self.noise.reset()
 
-    def learn_batch(self, timestep):
-        if timestep % self.learn_every == 0:
-            for _ in range(self.learn_iterations):
-                if len(self.memory) > self.batch_size:
-                    experiences = self.memory.sample(self.batch_size)
-                    self.learn(experiences=experiences, gamma=self.gamma)
+    def learn_batch(self, timestep, gamma=None, tau=None):
+        gamma = gamma or self.gamma
+        tau = tau or self.tau
 
-    def learn(self, experiences, gamma=None):
-        """Update value parameters using given batch of experience tuples.
+        if (timestep + 1) % self.learn_every == 0:
+            if len(self.memory) > self.batch_size:
+                for _ in range(self.learn_iterations):
+                    experiences = self.memory.sample(self.batch_size)
+                    self.learn(experiences=experiences, gamma=gamma, tau=tau)
+
+    def learn(self, experiences, gamma, tau):
+        """Update policy and value parameters using given batch of sarsd tuples.
+
+        Q_targets = r + γ * critic_target(next_state, actor_target(next_state))
+
+        where:
+            actor_target(state) -> action
+            critic_target(state, action) -> Q-value
 
         Keywords:
             experiences (Tuple[torch.Tensor]): ((s, a, r, s', done))
             gamma (float): discount factor
 
         """
-        gamma = gamma or self.gamma
-
         # Sample replay buffer
         states, actions, rewards, next_states, dones = experiences
 
         # Get predicted next-state actions and Q values from target models
         actions_next = self.actor_target(next_states)
         Q1_targets, Q2_targets = self.critic_target(next_states, actions_next)
+
+        # For TD3, get the minimum of both values returned by the twin networks
         Q_targets_next = torch.min(Q1_targets, Q2_targets)
 
         # Compute Q targets for current states
         Q_targets = rewards + (gamma * Q_targets_next * (1 - dones))
 
+        # --------------------------- update critic -------------------------- #
         # Compute critic loss
         Q1_expected, Q2_expected = self.critic_local(states, actions)
         critic_loss = \
@@ -168,6 +184,7 @@ class AgentTD3(object):
         torch.nn.utils.clip_grad_norm_(self.critic_local.parameters(), 1)
         self.critic_optimizer.step()
 
+        # --------------------------- update actor --------------------------- #
         # Compute actor loss
         actions_pred = self.actor_local(states)
         actor_loss = -self.critic_local.Q1(states, actions_pred).mean()
@@ -178,18 +195,19 @@ class AgentTD3(object):
         torch.nn.utils.clip_grad_norm_(self.actor_local.parameters(), 1)
         self.actor_optimizer.step()
 
+        # ----------------------- update target networks --------------------- #
         # Update the frozen critic
         self.soft_update(
             local_model=self.critic_local,
             target_model=self.critic_target,
-            tau=self.tau
+            tau=tau
         )
 
         # Update the frozen actor
         self.soft_update(
             local_model=self.actor_local,
             target_model=self.actor_target,
-            tau=self.tau
+            tau=tau
         )
 
     @staticmethod

@@ -27,14 +27,7 @@ class ActorFC(nn.Module):
 
     """
 
-    def __init__(
-        self,
-        state_size,
-        action_size,
-        fc1_units,
-        fc2_units,
-        seed=42
-    ):
+    def __init__(self, state_size, action_size, fc1_units, fc2_units, seed=42):
         super(ActorFC, self).__init__()
 
         self.seed = torch.manual_seed(seed)
@@ -73,14 +66,7 @@ class CriticFC(nn.Module):
 
     """
 
-    def __init__(
-        self,
-        state_size,
-        action_size,
-        fc1_units,
-        fc2_units,
-        seed=42
-    ):
+    def __init__(self, state_size, action_size, fc1_units, fc2_units, seed=42):
         super(CriticFC, self).__init__()
 
         self.seed = torch.manual_seed(seed)
